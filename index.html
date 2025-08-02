@@ -576,6 +576,10 @@
                 if (palace.majorLimit.startAge && palace.majorLimit.endAge) {
                     palace.majorLimit.startYear = data.birthYear + palace.majorLimit.startAge - 1;
                     palace.majorLimit.endYear = data.birthYear + palace.majorLimit.endAge - 1;
+                    
+                    // 記錄大限命宮資訊
+                    palace.majorLimit.majorPalaceName = palaceName;
+                    palace.majorLimit.majorPalaceEarthBranch = palace.earthBranch;
                 }
 
                 // 計算小限對應年份
@@ -584,6 +588,63 @@
                 // 計算流年對應年份
                 palace.fluentYearYears = palace.fluentYear.map(age => data.birthYear + age - 1);
             }
+            
+            // 計算大限十二宮分布
+            calculateMajorLimitPalaces(data);
+        }
+
+        function calculateMajorLimitPalaces(data) {
+            // 十二宮順序
+            const palaceOrder = ['命宮', '父母宮', '福德宮', '田宅宮', '官祿宮', '交友宮', '遷移宮', '疾厄宮', '財帛宮', '子女宮', '夫妻宮', '兄弟宮'];
+            
+            // 地支順序
+            const earthBranchOrder = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+            
+            for (let [palaceName, palace] of Object.entries(data.palaces)) {
+                if (palace.majorLimit.startAge && palace.majorLimit.endAge) {
+                    // 這個宮位是大限命宮
+                    const majorCommandPalaceEarthBranch = palace.earthBranch.match(/[子丑寅卯辰巳午未申酉戌亥]/);
+                    
+                    if (majorCommandPalaceEarthBranch && majorCommandPalaceEarthBranch[0]) {
+                        const earthBranch = majorCommandPalaceEarthBranch[0];
+                        const startIndex = earthBranchOrder.indexOf(earthBranch);
+                        
+                        console.log(`計算大限宮位 - ${palaceName}: 地支=${earthBranch}, 索引=${startIndex}`);
+                        
+                        if (startIndex !== -1) {
+                            palace.majorLimit.majorTwelvePalaces = {};
+                            
+                            // 從大限命宮開始，順時針安排十二宮
+                            for (let i = 0; i < 12; i++) {
+                                const currentEarthBranchIndex = (startIndex + i) % 12;
+                                const currentEarthBranch = earthBranchOrder[currentEarthBranchIndex];
+                                const currentPalaceType = palaceOrder[i];
+                                
+                                // 找出這個地支在原命盤中對應哪個宮位
+                                const originalPalace = findPalaceByEarthBranch(data.palaces, currentEarthBranch);
+                                
+                                palace.majorLimit.majorTwelvePalaces[currentPalaceType] = {
+                                    earthBranch: currentEarthBranch,
+                                    originalPalaceName: originalPalace ? originalPalace.name : '未知',
+                                    stars: originalPalace ? [...originalPalace.mainStars, ...originalPalace.supportStars] : []
+                                };
+                            }
+                            
+                            console.log(`${palaceName} 大限十二宮:`, palace.majorLimit.majorTwelvePalaces);
+                        }
+                    }
+                }
+            }
+        }
+
+        function findPalaceByEarthBranch(palaces, targetEarthBranch) {
+            for (let [palaceName, palace] of Object.entries(palaces)) {
+                const earthBranchMatch = palace.earthBranch.match(/[子丑寅卯辰巳午未申酉戌亥]/);
+                if (earthBranchMatch && earthBranchMatch[0] === targetEarthBranch) {
+                    return { name: palaceName, ...palace };
+                }
+            }
+            return null;
         }
 
         function generateTable(data) {
@@ -739,6 +800,28 @@
                 if (palace.majorLimit.startYear && palace.majorLimit.endYear) {
                     result += `<br>(${palace.majorLimit.startYear}-${palace.majorLimit.endYear})`;
                 }
+                
+                // 加入大限十二宮資訊
+                if (palace.majorLimit.majorTwelvePalaces && Object.keys(palace.majorLimit.majorTwelvePalaces).length > 0) {
+                    result += `<br><small style="color: #666; font-weight: bold;">★大限命宮★</small>`;
+                    
+                    // 顯示重要的大限宮位
+                    const importantPalaces = [
+                        { name: '財帛宮', desc: '大限財帛' },
+                        { name: '官祿宮', desc: '大限事業' },
+                        { name: '夫妻宮', desc: '大限感情' }
+                    ];
+                    
+                    importantPalaces.forEach(palaceInfo => {
+                        const majorPalace = palace.majorLimit.majorTwelvePalaces[palaceInfo.name];
+                        if (majorPalace && majorPalace.originalPalaceName) {
+                            result += `<br><small style="color: #4169e1;">${palaceInfo.desc}: ${majorPalace.originalPalaceName}(${majorPalace.earthBranch})</small>`;
+                        }
+                    });
+                } else {
+                    console.log(`${palace.majorLimit.majorPalaceName} 沒有大限十二宮資料`);
+                }
+                
                 return result;
             }
             return '無';
@@ -832,6 +915,15 @@
                         limitText += `（${palace.majorLimit.startYear}-${palace.majorLimit.endYear}年）`;
                     }
                     prompt += limitText + '\n';
+                    
+                    // 加入大限十二宮資訊
+                    if (palace.majorLimit.majorTwelvePalaces) {
+                        prompt += `此大限以${palaceName}為大限命宮，大限十二宮分布：\n`;
+                        const majorPalaces = palace.majorLimit.majorTwelvePalaces;
+                        Object.entries(majorPalaces).forEach(([majorPalaceType, majorPalaceInfo]) => {
+                            prompt += `大限${majorPalaceType}：${majorPalaceInfo.originalPalaceName}（${majorPalaceInfo.earthBranch}）\n`;
+                        });
+                    }
                 }
             });
 
