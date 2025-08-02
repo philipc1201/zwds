@@ -630,10 +630,42 @@
                                 };
                             }
                             
+                            // 計算大限四化
+                            calculateMajorLimitTransforms(palace, data.palaces);
+                            
                             console.log(`${palaceName} 大限十二宮:`, palace.majorLimit.majorTwelvePalaces);
                         }
                     }
                 }
+            }
+        }
+
+        function calculateMajorLimitTransforms(majorLimitPalace, allPalaces) {
+            // 取得大限命宮的天干
+            const majorLimitStem = majorLimitPalace.earthBranch[0]; // 天干
+            
+            if (transformTable[majorLimitStem]) {
+                const majorTransforms = transformTable[majorLimitStem];
+                majorLimitPalace.majorLimit.transforms = [];
+                
+                // 找出大限四化星落在哪些宮位
+                for (let [transformType, starName] of Object.entries(majorTransforms)) {
+                    for (let [palaceName, palace] of Object.entries(allPalaces)) {
+                        const foundStar = [...palace.mainStars, ...palace.supportStars].find(star => star.name === starName);
+                        if (foundStar) {
+                            majorLimitPalace.majorLimit.transforms.push({
+                                type: transformType,
+                                star: starName,
+                                targetPalace: palaceName,
+                                targetEarthBranch: palace.earthBranch,
+                                description: `大限${starName}化${transformType}在${palaceName}（${palace.earthBranch}）`
+                            });
+                            break;
+                        }
+                    }
+                }
+                
+                console.log(`大限${majorLimitPalace.majorLimit.majorPalaceName} - ${majorLimitStem}干四化:`, majorLimitPalace.majorLimit.transforms);
             }
         }
 
@@ -818,6 +850,15 @@
                             result += `<br><small style="color: #4169e1;">${palaceInfo.desc}: ${majorPalace.originalPalaceName}(${majorPalace.earthBranch})</small>`;
                         }
                     });
+                    
+                    // 加入大限四化
+                    if (palace.majorLimit.transforms && palace.majorLimit.transforms.length > 0) {
+                        const majorLimitStem = palace.earthBranch[0];
+                        result += `<br><small style="color: #e65100; font-weight: bold;">${majorLimitStem}干四化:</small>`;
+                        palace.majorLimit.transforms.forEach(transform => {
+                            result += `<br><small style="color: #e65100;">${transform.star}化${transform.type}→${transform.targetPalace}</small>`;
+                        });
+                    }
                 } else {
                     console.log(`${palace.majorLimit.majorPalaceName} 沒有大限十二宮資料`);
                 }
@@ -923,6 +964,15 @@
                         Object.entries(majorPalaces).forEach(([majorPalaceType, majorPalaceInfo]) => {
                             prompt += `大限${majorPalaceType}：${majorPalaceInfo.originalPalaceName}（${majorPalaceInfo.earthBranch}）\n`;
                         });
+                        
+                        // 加入大限四化資訊
+                        if (palace.majorLimit.transforms && palace.majorLimit.transforms.length > 0) {
+                            const majorLimitStem = palace.earthBranch[0];
+                            prompt += `大限${majorLimitStem}干四化：\n`;
+                            palace.majorLimit.transforms.forEach(transform => {
+                                prompt += `${transform.description}\n`;
+                            });
+                        }
                     }
                 }
             });
