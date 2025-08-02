@@ -272,14 +272,18 @@
                 const line = lines[i].trim();
                 const palaceMatch = line.match(/├([^宮]*宮)\[([^\]]+)\]/) || line.match(/└([^宮]*宮)\[([^\]]+)\]/);
                 if (palaceMatch) {
+                    // 清理宮位名稱，移除多餘空格和特殊字符
+                    const palaceName = palaceMatch[1].trim().replace(/\s+/g, '');
                     palaceMatches.push({
                         lineIndex: i,
-                        name: palaceMatch[1],
+                        name: palaceName,
                         earthBranch: palaceMatch[2],
                         line: line
                     });
                 }
             }
+            
+            console.log('找到的宮位:', palaceMatches.map(p => p.name));
             
             // 為每個宮位提取內容
             for (let i = 0; i < palaceMatches.length; i++) {
@@ -297,6 +301,8 @@
                         palaceContent += lines[j] + '\n';
                     }
                 }
+                
+                console.log(`處理宮位: ${palace.name}, 內容長度: ${palaceContent.length}`);
                 
                 // 處理這個宮位
                 processPalace(palace.name, palace.earthBranch, palaceContent, data);
@@ -596,6 +602,11 @@
                     </div>
                 </div>
 
+                <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                    <strong>調試信息：</strong>找到宮位數量: ${Object.keys(data.palaces).length}<br>
+                    宮位列表: ${Object.keys(data.palaces).join('、')}
+                </div>
+
                 <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
                     <thead>
                         <tr style="background-color: #f2f2f2;">
@@ -613,12 +624,25 @@
                     <tbody>
             `;
 
-            // 按固定順序排列宮位
+            // 按固定順序排列宮位，但也要包含實際找到的宮位
             const palaceOrder = ['命宮', '父母宮', '福德宮', '田宅宮', '官祿宮', '交友宮', '遷移宮', '疾厄宮', '財帛宮', '子女宮', '夫妻宮', '兄弟宮'];
             
-            palaceOrder.forEach(palaceName => {
+            // 先按順序顯示，然後顯示其他找到的宮位
+            const foundPalaces = Object.keys(data.palaces);
+            const allPalaces = [...new Set([...palaceOrder, ...foundPalaces])];
+            
+            allPalaces.forEach(palaceName => {
                 const palace = data.palaces[palaceName];
-                if (!palace) return;
+                if (!palace) {
+                    // 顯示缺失的宮位
+                    html += `
+                        <tr style="background-color: #ffebee;">
+                            <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; color: #d32f2f;">${palaceName}</td>
+                            <td colspan="8" style="border: 1px solid #ddd; padding: 8px; color: #666;">未找到此宮位資料</td>
+                        </tr>
+                    `;
+                    return;
+                }
 
                 html += `
                     <tr style="background-color: #fafafa;">
