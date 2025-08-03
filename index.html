@@ -7,8 +7,25 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="converter-container">
-        <h2>紫微斗數命盤格式轉換器</h2>
+    <!-- 登入頁面 -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <h2>紫微斗數命盤轉換器</h2>
+            <p>請輸入密碼以繼續使用</p>
+            <div class="login-form">
+                <input type="password" id="passwordInput" placeholder="請輸入密碼" maxlength="20">
+                <button onclick="checkPassword()" class="login-btn">登入</button>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要應用頁面 -->
+    <div id="mainContainer" class="converter-container" style="display: none;">
+        <div class="header">
+            <h2>紫微斗數命盤格式轉換器</h2>
+            <button onclick="logout()" class="logout-btn">登出</button>
+        </div>
         <p>將原始命盤文字轉換為結構化表格和AI分析提示詞</p>
         
         <div class="input-section">
@@ -53,7 +70,9 @@
         </div>
     </div>
 
+    <!-- JavaScript 文件載入 -->
     <script src="config.js"></script>
+    <script src="auth.js"></script>
     <script src="parser.js"></script>
     <script src="calculator.js"></script>
     <script src="formatter.js"></script>
