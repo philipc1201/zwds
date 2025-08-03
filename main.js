@@ -1,3 +1,30 @@
+// 在原有的 main.js 開頭加入認證檢查
+function convertChart() {
+    // 檢查認證
+    if (!requireAuth()) {
+        return;
+    }
+    
+    const inputText = document.getElementById('inputText').value;
+    if (!inputText.trim()) {
+        alert('請先輸入命盤文字');
+        return;
+    }
+
+    // ... 原有的轉換邏輯
+}
+
+function copyResult(type) {
+    // 檢查認證
+    if (!requireAuth()) {
+        return;
+    }
+    
+    // ... 原有的複製邏輯
+}
+
+// ... 其他原有函數
+
 // 主要控制邏輯
 function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => {
