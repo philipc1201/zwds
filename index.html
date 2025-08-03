@@ -4,28 +4,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>紫微斗數命盤轉換器</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .converter-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .input-section {
+            margin-bottom: 30px;
+        }
+        .input-section textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .convert-btn {
+            background: #2c5aa0;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .convert-btn:hover {
+            background: #1e3f73;
+        }
+        .output-section {
+            margin-top: 30px;
+            display: none;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .tab-btn.active {
+            background: #2c5aa0;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .result-area {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fafafa;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .copy-btn:hover {
+            background: #218838;
+        }
+        .sample-data {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <!-- 登入頁面 -->
-    <div id="loginContainer" class="login-container">
-        <div class="login-box">
-            <h2>紫微斗數命盤轉換器</h2>
-            <p>請輸入密碼以繼續使用</p>
-            <div class="login-form">
-                <input type="password" id="passwordInput" placeholder="請輸入密碼" maxlength="20">
-                <button onclick="checkPassword()" class="login-btn">登入</button>
-                <div id="errorMessage" class="error-message"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 主要應用頁面 -->
-    <div id="mainContainer" class="converter-container" style="display: none;">
-        <div class="header">
-            <h2>紫微斗數命盤格式轉換器</h2>
-            <button onclick="logout()" class="logout-btn">登出</button>
-        </div>
+    <div class="converter-container">
+        <h2>紫微斗數命盤格式轉換器</h2>
         <p>將原始命盤文字轉換為結構化表格和AI分析提示詞</p>
         
         <div class="input-section">
@@ -70,13 +144,996 @@
         </div>
     </div>
 
-    <!-- JavaScript 文件載入 -->
-    <script src="config.js"></script>
-    <script src="auth.js"></script>
-    <script src="parser.js"></script>
-    <script src="calculator.js"></script>
-    <script src="formatter.js"></script>
-    <script src="prompt.js"></script>
-    <script src="main.js"></script>
+    <script>
+        // 四化表
+        const transformTable = {
+            '甲': { 祿: '廉貞', 權: '破軍', 科: '武曲', 忌: '太陽' },
+            '乙': { 祿: '天機', 權: '天梁', 科: '紫微', 忌: '太陰' },
+            '丙': { 祿: '天同', 權: '天機', 科: '文昌', 忌: '廉貞' },
+            '丁': { 祿: '太陰', 權: '天同', 科: '天機', 忌: '巨門' },
+            '戊': { 祿: '貪狼', 權: '太陰', 科: '太陽', 忌: '天機' },
+            '己': { 祿: '武曲', 權: '貪狼', 科: '天梁', 忌: '文曲' },
+            '庚': { 祿: '太陽', 權: '武曲', 科: '天府', 忌: '天同' },
+            '辛': { 祿: '巨門', 權: '太陽', 科: '文曲', 忌: '文昌' },
+            '壬': { 祿: '天梁', 權: '紫微', 科: '天府', 忌: '武曲' },
+            '癸': { 祿: '破軍', 權: '巨門', 科: '太陰', 忌: '貪狼' }
+        };
+
+        function showTab(tabName) {
+            // 隱藏所有tab
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 顯示選中的tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function convertChart() {
+            const inputText = document.getElementById('inputText').value;
+            if (!inputText.trim()) {
+                alert('請先輸入命盤文字');
+                return;
+            }
+
+            try {
+                console.log('開始解析命盤...');
+                
+                // 解析命盤
+                const chartData = parseChart(inputText);
+                
+                console.log('解析完成，數據:', chartData);
+                
+                // 生成表格
+                const tableHTML = generateTable(chartData);
+                document.getElementById('tableResult').innerHTML = tableHTML;
+                
+                // 生成AI提示詞
+                const promptText = generatePrompt(chartData);
+                document.getElementById('promptResult').innerText = promptText;
+                
+                // 顯示原始數據
+                document.getElementById('rawResult').innerText = JSON.stringify(chartData, null, 2);
+                
+                // 顯示輸出區域
+                document.getElementById('outputSection').style.display = 'block';
+                
+                console.log('轉換完成！');
+                
+            } catch (error) {
+                console.error('解析錯誤:', error);
+                alert('解析失敗：' + error.message);
+            }
+        }
+
+        function parseChart(text) {
+            const data = {
+                basicInfo: {},
+                palaces: {},
+                birthYear: null
+            };
+
+            // 1. 提取基本資訊
+            parseBasicInfo(text, data);
+            
+            // 2. 解析各宮位
+            parsePalaces(text, data);
+            
+            // 3. 計算四化關係
+            calculateTransforms(data);
+            
+            // 4. 計算年份對照
+            calculateYears(data);
+
+            return data;
+        }
+
+        function parseBasicInfo(text, data) {
+            // 性別
+            const genderMatch = text.match(/性别\s*:\s*(\S+)/);
+            if (genderMatch) data.basicInfo.gender = genderMatch[1];
+
+            // 時間資訊
+            const timeMatch = text.match(/鐘錶時間\s*:\s*([^\n]+)/);
+            if (timeMatch) data.basicInfo.birthTime = timeMatch[1].trim();
+
+            const lunarMatch = text.match(/農曆時間\s*:\s*([^\n]+)/);
+            if (lunarMatch) data.basicInfo.lunarTime = lunarMatch[1].trim();
+
+            // 提取出生年份
+            const yearMatch = text.match(/(\d{4})-\d{1,2}-\d{1,2}/);
+            if (yearMatch) data.birthYear = parseInt(yearMatch[1]);
+
+            // 五行局
+            const wuxingMatch = text.match(/五行局數\s*:\s*([^\n]+)/);
+            if (wuxingMatch) data.basicInfo.wuxing = wuxingMatch[1].trim();
+
+            // 命主身主
+            const masterMatch = text.match(/身主:([^;]+);\s*命主:([^;]+);\s*子年斗君:([^;]+);\s*身宮:(\S+)/);
+            if (masterMatch) {
+                data.basicInfo.bodyMaster = masterMatch[1].trim();
+                data.basicInfo.lifeMaster = masterMatch[2].trim();
+                data.basicInfo.childYearJun = masterMatch[3].trim();
+                data.basicInfo.bodyPalace = masterMatch[4].trim();
+            }
+        }
+
+        function parsePalaces(text, data) {
+            // 使用更簡單可靠的方法：先找到所有宮位的起始位置
+            const palaceMatches = [];
+            const lines = text.split('\n');
+            
+            // 找到所有宮位的位置
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const palaceMatch = line.match(/├([^宮]*宮)\[([^\]]+)\]/) || line.match(/└([^宮]*宮)\[([^\]]+)\]/);
+                if (palaceMatch) {
+                    // 清理宮位名稱，移除多餘空格和特殊字符
+                    const palaceName = palaceMatch[1].trim().replace(/\s+/g, '');
+                    palaceMatches.push({
+                        lineIndex: i,
+                        name: palaceName,
+                        earthBranch: palaceMatch[2],
+                        line: line
+                    });
+                }
+            }
+            
+            console.log('找到的宮位:', palaceMatches.map(p => p.name));
+            
+            // 為每個宮位提取內容
+            for (let i = 0; i < palaceMatches.length; i++) {
+                const palace = palaceMatches[i];
+                const nextPalace = palaceMatches[i + 1];
+                
+                // 確定內容範圍
+                const startLine = palace.lineIndex + 1;
+                const endLine = nextPalace ? nextPalace.lineIndex : lines.length;
+                
+                // 提取宮位內容
+                let palaceContent = '';
+                for (let j = startLine; j < endLine; j++) {
+                    if (j < lines.length) {
+                        palaceContent += lines[j] + '\n';
+                    }
+                }
+                
+                console.log(`處理宮位: ${palace.name}, 內容長度: ${palaceContent.length}`);
+                
+                // 處理這個宮位
+                processPalace(palace.name, palace.earthBranch, palaceContent, data);
+            }
+        }
+
+        function processPalace(palaceName, earthBranch, content, data) {
+            const palace = {
+                earthBranch: earthBranch,
+                mainStars: [],
+                supportStars: [],
+                minorStars: [],
+                birthYearTransforms: [],
+                selfTransforms: [],
+                flyInTransforms: [],
+                majorLimit: {},
+                minorLimit: [],
+                fluentYear: []
+            };
+            
+            // 解析各部分
+            parseMainStars(content, palace);
+            parseSupportStars(content, palace);
+            parseMinorStars(content, palace);
+            parseLimitsAndYears(content, palace);
+
+            data.palaces[palaceName] = palace;
+        }
+
+        function parseMainStars(content, palace) {
+            const mainStarMatch = content.match(/├主星\s*:\s*([^\n├]+)/);
+            if (!mainStarMatch) return;
+
+            const starText = mainStarMatch[1];
+            
+            // 先按逗號分割各個星曜
+            const starEntries = starText.split(',');
+            
+            starEntries.forEach(entry => {
+                entry = entry.trim();
+                if (!entry || entry === '無') return;
+                
+                // 解析每個星曜：星名[狀態][四化符號]
+                const starPattern = /^(\S+?)\[([^\]]+?)\](?:\[([^\]]+?)\])?(?:\[([^\]]+?)\])?/;
+                const match = starPattern.exec(entry);
+                
+                if (match) {
+                    const starName = match[1];
+                    const temple = match[2];
+                    const transform1 = match[3];
+                    const transform2 = match[4];
+
+                    const star = {
+                        name: starName,
+                        temple: temple,
+                        birthYearTransform: null,
+                        selfTransform: null,
+                        flyInTransform: null
+                    };
+
+                    // 解析四化符號
+                    [transform1, transform2].forEach(t => {
+                        if (!t) return;
+                        
+                        if (t.match(/生年[祿權科忌]/)) {
+                            star.birthYearTransform = t.replace('生年', '');
+                        } else if (t.match(/↓[祿權科忌]/)) {
+                            star.selfTransform = t.replace('↓', '');
+                        } else if (t.match(/↑[祿權科忌]/)) {
+                            star.flyInTransform = t.replace('↑', '');
+                        }
+                    });
+
+                    palace.mainStars.push(star);
+                } else {
+                    // 處理沒有方括號的星曜
+                    palace.mainStars.push({
+                        name: entry,
+                        temple: null,
+                        birthYearTransform: null,
+                        selfTransform: null,
+                        flyInTransform: null
+                    });
+                }
+            });
+        }
+
+        function parseSupportStars(content, palace) {
+            const supportStarMatch = content.match(/├輔星\s*:\s*([^\n├]+)/);
+            if (!supportStarMatch) return;
+
+            const starText = supportStarMatch[1];
+            if (starText.includes('無')) return;
+
+            // 先按逗號分割各個星曜
+            const starEntries = starText.split(',');
+            
+            starEntries.forEach(entry => {
+                entry = entry.trim();
+                if (!entry) return;
+                
+                // 解析每個星曜
+                const starPattern = /^(\S+?)\[([^\]]+?)\](?:\[([^\]]+?)\])?(?:\[([^\]]+?)\])?/;
+                const match = starPattern.exec(entry);
+                
+                if (match) {
+                    const starName = match[1];
+                    const temple = match[2];
+                    const transform1 = match[3];
+                    const transform2 = match[4];
+
+                    const star = {
+                        name: starName,
+                        temple: temple,
+                        birthYearTransform: null,
+                        selfTransform: null,
+                        flyInTransform: null
+                    };
+
+                    [transform1, transform2].forEach(t => {
+                        if (!t) return;
+                        
+                        if (t.match(/生年[祿權科忌]/)) {
+                            star.birthYearTransform = t.replace('生年', '');
+                        } else if (t.match(/↓[祿權科忌]/)) {
+                            star.selfTransform = t.replace('↓', '');
+                        } else if (t.match(/↑[祿權科忌]/)) {
+                            star.flyInTransform = t.replace('↑', '');
+                        }
+                    });
+
+                    palace.supportStars.push(star);
+                } else {
+                    // 處理沒有方括號的星曜
+                    palace.supportStars.push({
+                        name: entry,
+                        temple: null,
+                        birthYearTransform: null,
+                        selfTransform: null,
+                        flyInTransform: null
+                    });
+                }
+            });
+        }
+
+        function parseMinorStars(content, palace) {
+            const minorStarMatch = content.match(/├小星\s*:\s*([^\n├]+)/);
+            if (!minorStarMatch) return;
+
+            const starText = minorStarMatch[1];
+            if (starText.includes('無')) return;
+
+            // 小星可能用逗號或空格分隔，先統一處理
+            const cleanText = starText.replace(/[,，]/g, ',');
+            const starEntries = cleanText.split(',');
+
+            starEntries.forEach(entry => {
+                entry = entry.trim();
+                if (!entry) return;
+
+                // 小星通常格式: 星名[廟陷] 或 單純星名
+                const starPattern = /^([^[\]]+?)(?:\[([^\]]+?)\])?$/;
+                const match = starPattern.exec(entry);
+
+                if (match) {
+                    const starName = match[1].trim();
+                    const temple = match[2];
+
+                    if (starName) {
+                        palace.minorStars.push({
+                            name: starName,
+                            temple: temple
+                        });
+                    }
+                }
+            });
+        }
+
+        function parseLimitsAndYears(content, palace) {
+            // 大限
+            const majorLimitMatch = content.match(/├大限\s*:\s*([^\n├]+)/);
+            if (majorLimitMatch) {
+                const limitText = majorLimitMatch[1];
+                const ageMatch = limitText.match(/(\d+)~(\d+)虛歲/);
+                if (ageMatch) {
+                    palace.majorLimit = {
+                        startAge: parseInt(ageMatch[1]),
+                        endAge: parseInt(ageMatch[2])
+                    };
+                }
+            }
+
+            // 小限
+            const minorLimitMatch = content.match(/├小限\s*:\s*([^\n├]+)/);
+            if (minorLimitMatch) {
+                const ages = minorLimitMatch[1].match(/\d+/g);
+                if (ages) {
+                    palace.minorLimit = ages.map(age => parseInt(age));
+                }
+            }
+
+            // 流年
+            const fluentYearMatch = content.match(/└流年\s*:\s*([^\n├└]+)/);
+            if (fluentYearMatch) {
+                const ages = fluentYearMatch[1].match(/\d+/g);
+                if (ages) {
+                    palace.fluentYear = ages.map(age => parseInt(age));
+                }
+            }
+        }
+
+        function calculateTransforms(data) {
+            // 計算各宮位的自化和飛化關係
+            for (let [palaceName, palace] of Object.entries(data.palaces)) {
+                const earthBranch = palace.earthBranch;
+                let stem = '';
+                
+                // 提取天干
+                if (earthBranch.length >= 1) {
+                    stem = earthBranch[0];
+                }
+
+                // 處理自化
+                [...palace.mainStars, ...palace.supportStars].forEach(star => {
+                    if (star.selfTransform && transformTable[stem]) {
+                        const expectedStar = transformTable[stem][star.selfTransform];
+                        if (expectedStar === star.name) {
+                            palace.selfTransforms.push({
+                                star: star.name,
+                                transform: star.selfTransform,
+                                description: `${palaceName}${star.name}自化${star.selfTransform}`
+                            });
+                        }
+                    }
+                });
+            }
+
+            // 計算飛化（需要找出來源宮位）
+            calculateFlyTransforms(data);
+        }
+
+        function calculateFlyTransforms(data) {
+            for (let [targetPalaceName, targetPalace] of Object.entries(data.palaces)) {
+                [...targetPalace.mainStars, ...targetPalace.supportStars].forEach(star => {
+                    if (star.flyInTransform) {
+                        // 找出哪個宮位的天干會讓這個星產生此四化
+                        for (let [sourcePalaceName, sourcePalace] of Object.entries(data.palaces)) {
+                            const sourceStem = sourcePalace.earthBranch[0];
+                            if (transformTable[sourceStem] && 
+                                transformTable[sourceStem][star.flyInTransform] === star.name) {
+                                
+                                targetPalace.flyInTransforms.push({
+                                    sourcePalace: sourcePalaceName,
+                                    targetStar: star.name,
+                                    transform: star.flyInTransform,
+                                    description: `${sourcePalaceName}起${sourceStem}干化${star.name}${star.flyInTransform}入${targetPalaceName}`
+                                });
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function calculateYears(data) {
+            if (!data.birthYear) return;
+
+            for (let [palaceName, palace] of Object.entries(data.palaces)) {
+                // 計算大限對應年份
+                if (palace.majorLimit.startAge && palace.majorLimit.endAge) {
+                    palace.majorLimit.startYear = data.birthYear + palace.majorLimit.startAge - 1;
+                    palace.majorLimit.endYear = data.birthYear + palace.majorLimit.endAge - 1;
+                    
+                    // 記錄大限命宮資訊
+                    palace.majorLimit.majorPalaceName = palaceName;
+                    palace.majorLimit.majorPalaceEarthBranch = palace.earthBranch;
+                }
+
+                // 計算小限對應年份
+                palace.minorLimitYears = palace.minorLimit.map(age => data.birthYear + age - 1);
+
+                // 計算流年對應年份
+                palace.fluentYearYears = palace.fluentYear.map(age => data.birthYear + age - 1);
+            }
+            
+            // 計算大限十二宮分布
+            calculateMajorLimitPalaces(data);
+        }
+
+        function calculateMajorLimitPalaces(data) {
+            // 十二宮順序
+            const palaceOrder = ['命宮', '父母宮', '福德宮', '田宅宮', '官祿宮', '交友宮', '遷移宮', '疾厄宮', '財帛宮', '子女宮', '夫妻宮', '兄弟宮'];
+            
+            // 地支順序
+            const earthBranchOrder = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+            
+            for (let [palaceName, palace] of Object.entries(data.palaces)) {
+                if (palace.majorLimit.startAge && palace.majorLimit.endAge) {
+                    // 這個宮位是大限命宮
+                    const majorCommandPalaceEarthBranch = palace.earthBranch.match(/[子丑寅卯辰巳午未申酉戌亥]/);
+                    
+                    if (majorCommandPalaceEarthBranch && majorCommandPalaceEarthBranch[0]) {
+                        const earthBranch = majorCommandPalaceEarthBranch[0];
+                        const startIndex = earthBranchOrder.indexOf(earthBranch);
+                        
+                        console.log(`計算大限宮位 - ${palaceName}: 地支=${earthBranch}, 索引=${startIndex}`);
+                        
+                        if (startIndex !== -1) {
+                            palace.majorLimit.majorTwelvePalaces = {};
+                            
+                            // 從大限命宮開始，順時針安排十二宮
+                            for (let i = 0; i < 12; i++) {
+                                const currentEarthBranchIndex = (startIndex + i) % 12;
+                                const currentEarthBranch = earthBranchOrder[currentEarthBranchIndex];
+                                const currentPalaceType = palaceOrder[i];
+                                
+                                // 找出這個地支在原命盤中對應哪個宮位
+                                const originalPalace = findPalaceByEarthBranch(data.palaces, currentEarthBranch);
+                                
+                                palace.majorLimit.majorTwelvePalaces[currentPalaceType] = {
+                                    earthBranch: currentEarthBranch,
+                                    originalPalaceName: originalPalace ? originalPalace.name : '未知',
+                                    stars: originalPalace ? [...originalPalace.mainStars, ...originalPalace.supportStars] : []
+                                };
+                            }
+                            
+                            // 計算大限四化
+                            calculateMajorLimitTransforms(palace, data.palaces);
+                            
+                            console.log(`${palaceName} 大限十二宮:`, palace.majorLimit.majorTwelvePalaces);
+                        }
+                    }
+                }
+            }
+        }
+
+        function calculateMajorLimitTransforms(majorLimitPalace, allPalaces) {
+            // 取得大限命宮的天干
+            const majorLimitStem = majorLimitPalace.earthBranch[0]; // 天干
+            
+            if (transformTable[majorLimitStem]) {
+                const majorTransforms = transformTable[majorLimitStem];
+                majorLimitPalace.majorLimit.transforms = [];
+                
+                // 找出大限四化星落在哪些宮位
+                for (let [transformType, starName] of Object.entries(majorTransforms)) {
+                    for (let [palaceName, palace] of Object.entries(allPalaces)) {
+                        const foundStar = [...palace.mainStars, ...palace.supportStars].find(star => star.name === starName);
+                        if (foundStar) {
+                            majorLimitPalace.majorLimit.transforms.push({
+                                type: transformType,
+                                star: starName,
+                                targetPalace: palaceName,
+                                targetEarthBranch: palace.earthBranch,
+                                description: `大限${starName}化${transformType}在${palaceName}（${palace.earthBranch}）`
+                            });
+                            break;
+                        }
+                    }
+                }
+                
+                console.log(`大限${majorLimitPalace.majorLimit.majorPalaceName} - ${majorLimitStem}干四化:`, majorLimitPalace.majorLimit.transforms);
+            }
+        }
+
+        function findPalaceByEarthBranch(palaces, targetEarthBranch) {
+            for (let [palaceName, palace] of Object.entries(palaces)) {
+                const earthBranchMatch = palace.earthBranch.match(/[子丑寅卯辰巳午未申酉戌亥]/);
+                if (earthBranchMatch && earthBranchMatch[0] === targetEarthBranch) {
+                    return { name: palaceName, ...palace };
+                }
+            }
+            return null;
+        }
+
+        function generateTable(data) {
+            let html = `
+                <div style="margin-bottom: 20px; padding: 15px; background: #e8f4fd; border-radius: 8px;">
+                    <h3>基本資料</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
+                        <div><strong>性別：</strong>${data.basicInfo.gender || '未知'}</div>
+                        <div><strong>出生時間：</strong>${data.basicInfo.birthTime || '未知'}</div>
+                        <div><strong>農曆：</strong>${data.basicInfo.lunarTime || '未知'}</div>
+                        <div><strong>五行局：</strong>${data.basicInfo.wuxing || '未知'}</div>
+                        <div><strong>命主：</strong>${data.basicInfo.lifeMaster || '未知'}</div>
+                        <div><strong>身主：</strong>${data.basicInfo.bodyMaster || '未知'}</div>
+                        <div><strong>身宮：</strong>${data.basicInfo.bodyPalace || '未知'}宮</div>
+                        <div><strong>子年斗君：</strong>${data.basicInfo.childYearJun || '未知'}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                    <strong>調試信息：</strong>找到宮位數量: ${Object.keys(data.palaces).length}<br>
+                    宮位列表: ${Object.keys(data.palaces).join('、')}
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">宮位</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">地支</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">主星</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">輔星</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">小星</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">生年四化</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">自化/飛化</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">大限年齡</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">流年年份</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // 按固定順序排列宮位，但也要包含實際找到的宮位
+            const palaceOrder = ['命宮', '父母宮', '福德宮', '田宅宮', '官祿宮', '交友宮', '遷移宮', '疾厄宮', '財帛宮', '子女宮', '夫妻宮', '兄弟宮'];
+            
+            // 先按順序顯示，然後顯示其他找到的宮位
+            const foundPalaces = Object.keys(data.palaces);
+            const allPalaces = [...new Set([...palaceOrder, ...foundPalaces])];
+            
+            allPalaces.forEach(palaceName => {
+                const palace = data.palaces[palaceName];
+                if (!palace) {
+                    // 顯示缺失的宮位
+                    html += `
+                        <tr style="background-color: #ffebee;">
+                            <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; color: #d32f2f;">${palaceName}</td>
+                            <td colspan="8" style="border: 1px solid #ddd; padding: 8px; color: #666;">未找到此宮位資料</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                html += `
+                    <tr style="background-color: #fafafa;">
+                        <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; color: #2c5aa0;">${palaceName}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${palace.earthBranch}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                            ${formatStars(palace.mainStars)}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                            ${formatStars(palace.supportStars)}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                            ${formatMinorStars(palace.minorStars)}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                            ${formatBirthYearTransforms(palace)}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                            ${formatSelfAndFlyTransforms(palace)}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top; color: #4169e1;">
+                            ${formatMajorLimit(palace)}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top; color: #4169e1;">
+                            ${formatFluentYears(palace)}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            return html;
+        }
+
+        function formatStars(stars) {
+            if (!stars || stars.length === 0) return '無';
+            
+            return stars.map(star => {
+                let starText = `<span style="color: #d2691e; font-weight: bold;">${star.name}</span>`;
+                if (star.temple) {
+                    starText += `<span style="color: #8b4513; font-size: 0.85em;">[${star.temple}]</span>`;
+                }
+                return starText;
+            }).join('<br>');
+        }
+
+        function formatMinorStars(stars) {
+            if (!stars || stars.length === 0) return '無';
+            
+            return stars.map(star => {
+                let starText = `<span style="color: #666;">${star.name}</span>`;
+                if (star.temple) {
+                    starText += `<span style="color: #8b4513; font-size: 0.85em;">[${star.temple}]</span>`;
+                }
+                return starText;
+            }).join(', ');
+        }
+
+        function formatBirthYearTransforms(palace) {
+            const transforms = [];
+            
+            [...palace.mainStars, ...palace.supportStars].forEach(star => {
+                if (star.birthYearTransform) {
+                    transforms.push(`<span style="background: #ffe4b5; padding: 2px 4px; border-radius: 3px; font-size: 0.9em;">${star.name}-生年${star.birthYearTransform}</span>`);
+                }
+            });
+            
+            return transforms.length > 0 ? transforms.join('<br>') : '無';
+        }
+
+        function formatSelfAndFlyTransforms(palace) {
+            const transforms = [];
+            
+            // 自化
+            palace.selfTransforms.forEach(transform => {
+                transforms.push(`<span style="background: #ffcccb; padding: 2px 4px; border-radius: 3px; font-size: 0.9em;">${transform.description}</span>`);
+            });
+            
+            // 飛化
+            palace.flyInTransforms.forEach(transform => {
+                transforms.push(`<span style="background: #e0ffe0; padding: 2px 4px; border-radius: 3px; font-size: 0.9em;">${transform.description}</span>`);
+            });
+            
+            return transforms.length > 0 ? transforms.join('<br>') : '無';
+        }
+
+        function formatMajorLimit(palace) {
+            if (palace.majorLimit.startAge && palace.majorLimit.endAge) {
+                let result = `${palace.majorLimit.startAge}~${palace.majorLimit.endAge}虛歲`;
+                if (palace.majorLimit.startYear && palace.majorLimit.endYear) {
+                    result += `<br>(${palace.majorLimit.startYear}-${palace.majorLimit.endYear})`;
+                }
+                
+                // 加入大限十二宮資訊
+                if (palace.majorLimit.majorTwelvePalaces && Object.keys(palace.majorLimit.majorTwelvePalaces).length > 0) {
+                    result += `<br><small style="color: #666; font-weight: bold;">★大限命宮★</small>`;
+                    
+                    // 顯示重要的大限宮位
+                    const importantPalaces = [
+                        { name: '財帛宮', desc: '大限財帛' },
+                        { name: '官祿宮', desc: '大限事業' },
+                        { name: '夫妻宮', desc: '大限感情' }
+                    ];
+                    
+                    importantPalaces.forEach(palaceInfo => {
+                        const majorPalace = palace.majorLimit.majorTwelvePalaces[palaceInfo.name];
+                        if (majorPalace && majorPalace.originalPalaceName) {
+                            result += `<br><small style="color: #4169e1;">${palaceInfo.desc}: ${majorPalace.originalPalaceName}(${majorPalace.earthBranch})</small>`;
+                        }
+                    });
+                    
+                    // 加入大限四化
+                    if (palace.majorLimit.transforms && palace.majorLimit.transforms.length > 0) {
+                        const majorLimitStem = palace.earthBranch[0];
+                        result += `<br><small style="color: #e65100; font-weight: bold;">${majorLimitStem}干四化:</small>`;
+                        palace.majorLimit.transforms.forEach(transform => {
+                            result += `<br><small style="color: #e65100;">${transform.star}化${transform.type}→${transform.targetPalace}</small>`;
+                        });
+                    }
+                } else {
+                    console.log(`${palace.majorLimit.majorPalaceName} 沒有大限十二宮資料`);
+                }
+                
+                return result;
+            }
+            return '無';
+        }
+
+        function formatFluentYears(palace) {
+            if (!palace.fluentYear || palace.fluentYear.length === 0) return '無';
+            
+            let result = palace.fluentYear.join(',') + '歲';
+            if (palace.fluentYearYears && palace.fluentYearYears.length > 0) {
+                result += `<br>(${palace.fluentYearYears.join(',')})`;
+            }
+            return result;
+        }
+
+        function generatePrompt(data) {
+            const birthYearStem = getBirthYearStem(data.basicInfo.lunarTime);
+            
+            let prompt = `你現在是資深的紫微斗數專家，請詳細分析以下命盤：
+
+【基本資料】
+性別：${data.basicInfo.gender || '未知'}
+出生時間：${data.basicInfo.birthTime || '未知'}
+農曆時間：${data.basicInfo.lunarTime || '未知'}
+五行局：${data.basicInfo.wuxing || '未知'}
+命主：${data.basicInfo.lifeMaster || '未知'}
+身主：${data.basicInfo.bodyMaster || '未知'}
+身宮：${data.basicInfo.bodyPalace || '未知'}宮
+子年斗君：${data.basicInfo.childYearJun || '未知'}
+
+【生年四化】`;
+
+            // 生成生年四化資訊
+            if (birthYearStem && transformTable[birthYearStem]) {
+                const yearTransforms = transformTable[birthYearStem];
+                prompt += `\n${birthYearStem}年生人四化：${yearTransforms.祿}化祿、${yearTransforms.權}化權、${yearTransforms.科}化科、${yearTransforms.忌}化忌\n`;
+                
+                // 找出生年四化星在哪些宮位
+                for (let [transformType, starName] of Object.entries(yearTransforms)) {
+                    for (let [palaceName, palace] of Object.entries(data.palaces)) {
+                        const foundStar = [...palace.mainStars, ...palace.supportStars].find(star => 
+                            star.name === starName && star.birthYearTransform === transformType
+                        );
+                        if (foundStar) {
+                            prompt += `${starName}化${transformType}在${palaceName}\n`;
+                        }
+                    }
+                }
+            }
+
+            prompt += `\n【各宮位詳細資訊】\n`;
+
+            // 按固定順序生成各宮位資訊
+            const palaceOrder = ['命宮', '父母宮', '福德宮', '田宅宮', '官祿宮', '交友宮', '遷移宮', '疾厄宮', '財帛宮', '子女宮', '夫妻宮', '兄弟宮'];
+            
+            palaceOrder.forEach(palaceName => {
+                const palace = data.palaces[palaceName];
+                if (!palace) return;
+
+                prompt += `\n${palaceName}（${palace.earthBranch}）：\n`;
+                
+                // 主星
+                if (palace.mainStars.length > 0) {
+                    prompt += `主星：${palace.mainStars.map(star => formatStarForPrompt(star)).join('、')}\n`;
+                }
+                
+                // 輔星
+                if (palace.supportStars.length > 0) {
+                    prompt += `輔星：${palace.supportStars.map(star => formatStarForPrompt(star)).join('、')}\n`;
+                }
+                
+                // 小星
+                if (palace.minorStars.length > 0) {
+                    prompt += `小星：${palace.minorStars.map(star => star.temple ? `${star.name}[${star.temple}]` : star.name).join('、')}\n`;
+                }
+                
+                // 自化
+                if (palace.selfTransforms.length > 0) {
+                    prompt += `自化：${palace.selfTransforms.map(t => t.description).join('、')}\n`;
+                }
+                
+                // 飛化
+                if (palace.flyInTransforms.length > 0) {
+                    prompt += `飛化：${palace.flyInTransforms.map(t => t.description).join('、')}\n`;
+                }
+                
+                // 大限
+                if (palace.majorLimit.startAge) {
+                    let limitText = `大限：${palace.majorLimit.startAge}~${palace.majorLimit.endAge}虛歲`;
+                    if (palace.majorLimit.startYear) {
+                        limitText += `（${palace.majorLimit.startYear}-${palace.majorLimit.endYear}年）`;
+                    }
+                    prompt += limitText + '\n';
+                    
+                    // 加入大限十二宮資訊
+                    if (palace.majorLimit.majorTwelvePalaces) {
+                        prompt += `此大限以${palaceName}為大限命宮，大限十二宮分布：\n`;
+                        const majorPalaces = palace.majorLimit.majorTwelvePalaces;
+                        Object.entries(majorPalaces).forEach(([majorPalaceType, majorPalaceInfo]) => {
+                            prompt += `大限${majorPalaceType}：${majorPalaceInfo.originalPalaceName}（${majorPalaceInfo.earthBranch}）\n`;
+                        });
+                        
+                        // 加入大限四化資訊
+                        if (palace.majorLimit.transforms && palace.majorLimit.transforms.length > 0) {
+                            const majorLimitStem = palace.earthBranch[0];
+                            prompt += `大限${majorLimitStem}干四化：\n`;
+                            palace.majorLimit.transforms.forEach(transform => {
+                                prompt += `${transform.description}\n`;
+                            });
+                        }
+                    }
+                }
+            });
+
+            prompt += `
+
+【紫微斗數分析框架】
+
+**重要基礎知識**：
+- **十二宮順序（順時針）**：命宮→父母宮→福德宮→田宅宮→官祿宮→交友宮→遷移宮→疾厄宮→財帛宮→子女宮→夫妻宮→兄弟宮→（回到命宮）
+- **十二地支順序**：子→丑→寅→卯→辰→巳→午→未→申→酉→戌→亥→子（循環）
+- **流年宮位計算法**：
+  1. 確定流年地支（如2028年戊申年，地支是「申」）
+  2. 在命盤中找出「申」地支對應的宮位作為流年命宮
+  3. 從流年命宮開始，按地支順序逐一安排：流年命宮（申）→流年父母宮（酉）→流年福德宮（戌）→流年田宅宮（亥）→流年官祿宮（子）→流年交友宮（丑）→流年遷移宮（寅）→流年疾厄宮（卯）→流年財帛宮（辰）→流年子女宮（巳）→流年夫妻宮（午）→流年兄弟宮（未）
+  4. 每個流年宮位對應命盤中該地支的原始宮位
+- **大限宮位計算法**：同樣從大限命宮的地支開始，按地支順序安排大限十二宮
+
+請根據以下步驟分析紫微斗數命盤：
+
+1. **本宮分析**
+   - 確定要分析的本宮（如命宮、財帛宮、事業宮等）
+   - 列出本宮內的主星、輔星、煞星
+   - 分析主星的廟旺利陷狀態
+   - 解讀宮內星曜組合的基本意義
+
+2. **對宮分析（相對宮位）**
+   - **重要**：對宮是指在十二宮順序中相隔六個宮位的宮位
+   - **對宮關係**：
+     * 命宮 ↔ 遷移宮、父母宮 ↔ 疾厄宮、福德宮 ↔ 財帛宮
+     * 田宅宮 ↔ 子女宮、官祿宮 ↔ 夫妻宮、交友宮 ↔ 兄弟宮
+   - 找出本宮的對宮
+   - 分析對宮星曜配置
+   - **重點關注**：
+     * 對宮與本宮的相互影響關係
+     * **必須分析**：當本宮+三合宮+對宮範圍內有成組星曜時，例如天魁天鉞、文昌文曲、左輔右弼等組合
+   - 解讀對宮如何影響本宮的表現
+   - 注意對宮星曜的沖剋或助力作用
+
+3. **三合宮分析（按地支三合組合）**
+   - **重要**：三合宮必須按地支組合，不是按宮位位置或名稱
+   - **三合宮對照表**：
+     * 申子辰三合：申宮、子宮、辰宮
+     * 寅午戌三合：寅宮、午宮、戌宮  
+     * 巳酉丑三合：巳宮、酉宮、丑宮
+     * 亥卯未三合：亥宮、卯宮、未宮
+   - **正確找法**：
+     1. 先確定本宮的地支（例如：命宮在戊辰，地支是「辰」）
+     2. 找出該地支的三合組合（辰屬申子辰三合）
+     3. 在命盤中找出申宮、子宮對應的實際宮位名稱
+     4. 分析這三個宮位的星曜配置
+   - **重點關注**：只有當三合宮的星曜有相同意思或呼應時才加成分析
+   - 如三合宮星曜意思不同或無特別關聯，則略過不深入分析
+   - 三合宮影響力次於本對宮，但重要性等同相鄰宮
+   - 解讀有意義的三合宮如何支援或制約本宮
+
+4. **前後宮分析（本宮地支的前後地支宮位）**
+   - **重要**：前後宮是指本宮地支在十二地支順序中的前一個和後一個地支
+   - **十二地支順序**：子→丑→寅→卯→辰→巳→午→未→申→酉→戌→亥→子（循環）
+   - **正確找法**：
+     1. 確定本宮的地支（例如：命宮在戊辰，地支是「辰」）
+     2. 在十二地支順序中找「辰」的前後：前一個是「卯」，後一個是「巳」
+     3. 在命盤中找出「卯宮」、「巳宮」對應的實際宮位名稱
+     4. 分析前後宮對本宮的影響
+   - **重點關注**：
+     * 只有當前後宮的星曜有相同意思或呼應時才加成分析
+     * **必須分析**：當前後宮各有一顆成組星曜時，例如前宮有天魁、後宮有天鉞，或前宮有文昌、後宮有文曲等組合
+   - 如前後宮星曜意思不同或無特別關聯，則略過不深入分析
+   - 前後宮影響力與三合宮同等重要，次於本對宮
+   - 解讀有意義的前後宮位對本宮的影響
+
+5. **六合宮分析（陰暗面陰陽宮位）**
+   - **重要**：六合宮按地支組合，代表陰暗面影響和陰陽宮位關係
+   - **六合對照表**：
+     * 子與丑合、寅與亥合、卯與戌合
+     * 辰與酉合、巳與申合、午與未合
+   - **正確找法**：
+     1. 確定本宮的地支（例如：命宮在戊辰，地支是「辰」）
+     2. 找出該地支的六合對象（辰與酉合）
+     3. 在命盤中找出酉宮對應的實際宮位名稱
+     4. 分析六合宮的陰暗面影響和陰陽關係
+   - 六合宮代表潛在的、陰暗面的影響力，需要特別留意
+
+6. **綜合判斷**
+   - **核心分析**：以本宮和對宮為主要分析重點（影響力最大）
+   - **輔助分析**：三合宮次之，只有當三合宮星曜有相同意思時才加成分析
+   - **前後宮分析**：與三合宮同等重要，只有當前後宮星曜有相同意思時才加成分析
+   - **陰暗面影響**：地支六合宮位為陰陽宮位，代表陰暗面影響
+   - **空宮處理**：空宮任何情況都不借星，但仍可運用本對合鄰六合分析法，**特別注意空宮會更容易受到對宮的直接影響**
+   - 考慮大運、流年的影響
+   - 給出具體的吉凶判斷和建議
+
+【分析要點】
+1. **星曜廟旺**：優先考慮主星的廟旺利陷
+2. **格局判斷**：注意是否形成特殊格局
+3. **煞星影響**：分析煞星對整體格局的破壞程度
+4. **輔星作用**：善用輔星的增強效果
+5. **宮位性質**：結合宮位本身的含義進行解讀
+6. **影響力層次**：本對宮（最大）→ 三合宮（次之）→ 前後宮（同三合）→ 六合宮（陰暗面）
+7. **加成原則**：只有星曜意思相同或呼應時才加成分析
+8. **空宮特殊原則**：空宮任何情況都不借星，但會特別受到對宮的直接影響和主導，對宮星曜的好壞會直接反映到空宮的表現上
+9. **成組星曜必看原則**：當本宮與三合宮、對宮、前後宮中出現成組星曜時，必須重點分析
+   - **常見成組星曜**：天魁天鉞、文昌文曲、左輔右弼、擎羊陀羅、火星鈴星、地空地劫等
+   - **分析範圍**：
+     * 本宮+三合宮+對宮：任何成組星曜出現在這個範圍內都必須分析
+     * 前後宮：各有一顆成組星曜時必須分析
+   - **分析重點**：成組星曜的組合效應比單顆星曜的影響更強，需特別留意
+8. **宮位順序**：必須按正確的十二宮順序（命宮→父母宮→福德宮→田宅宮→官祿宮→交友宮→遷移宮→疾厄宮→財帛宮→子女宮→夫妻宮→兄弟宮）進行分析
+9. **流年宮位計算**：流年宮位按地支順序排列，從流年命宮地支開始順序安排
+10. **大限宮位計算**：大限宮位按地支順序排列，從大限命宮地支開始順序安排
+
+請進行詳細的紫微斗數命盤分析。`;
+
+            return prompt;
+        }
+
+        function getBirthYearStem(lunarTime) {
+            if (!lunarTime) return null;
+            
+            // 從農曆時間提取年干，例如"己巳年冬月初四日申時"
+            const yearMatch = lunarTime.match(/([甲乙丙丁戊己庚辛壬癸])[子丑寅卯辰巳午未申酉戌亥]年/);
+            return yearMatch ? yearMatch[1] : null;
+        }
+
+        function formatStarForPrompt(star) {
+            let result = star.name;
+            if (star.temple) {
+                result += `[${star.temple}]`;
+            }
+            if (star.birthYearTransform) {
+                result += `[生年${star.birthYearTransform}]`;
+            }
+            if (star.selfTransform) {
+                result += `[自化${star.selfTransform}]`;
+            }
+            if (star.flyInTransform) {
+                result += `[被化${star.flyInTransform}]`;
+            }
+            return result;
+        }
+
+        function copyResult(type) {
+            let content = '';
+            switch(type) {
+                case 'table':
+                    content = document.getElementById('tableResult').innerHTML;
+                    break;
+                case 'prompt':
+                    content = document.getElementById('promptResult').innerText;
+                    break;
+                case 'raw':
+                    content = document.getElementById('rawResult').innerText;
+                    break;
+            }
+            
+            navigator.clipboard.writeText(content).then(() => {
+                alert('已複製到剪貼板');
+            }).catch(() => {
+                alert('複製失敗，請手動選取複製');
+            });
+        }
+    </script>
 </body>
 </html>
