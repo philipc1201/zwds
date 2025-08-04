@@ -17,6 +17,36 @@ function showTab(tabName) {
 function convertChart() {
     const inputText = document.getElementById('inputText').value;
     if (!inputText.trim()) {
+        alert('請先輸入命盤文字');
+        return;
+    }
+
+    try {
+        console.log('開始解析命盤...');
+        
+        // 解析命盤
+        const chartData = parseChart(inputText);
+        
+        console.log('解析完成，數據:', chartData);
+        
+        // 生成表格
+        const tableHTML = generateTable(chartData);
+        document.getElementById('tableResult').innerHTML = tableHTML;
+        
+        // 生成AI提示詞
+        const promptText = generatePrompt(chartData);
+        document.getElementById('promptResult').innerText = promptText;
+        
+        // 顯示原始數據
+        document.getElementById('rawResult').innerText = JSON.stringify(chartData, null, 2);
+        
+        // 顯示輸出區域
+        document.getElementById('outputSection').style.display = 'block';
+        
+        console.log('轉換完成！');
+        
+    } catch (error) {
+        console.error('解析錯誤:', error);
         alert('解析失敗：' + error.message);
     }
 }
