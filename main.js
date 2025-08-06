@@ -17,45 +17,7 @@ function showTab(tabName) {
 function convertChart() {
     const inputText = document.getElementById('inputText').value;
     if (!inputText.trim()) {
-        alert('解析失敗：' + error.message);
-    }
-}
-
-function copyResult(type) {
-    let content = '';
-    switch(type) {
-        case 'table':
-            content = document.getElementById('tableResult').innerHTML;
-            break;
-        case 'prompt':
-            content = document.getElementById('promptResult').innerText;
-            break;
-        case 'raw':
-            content = document.getElementById('rawResult').innerText;
-            break;
-    }
-    
-    navigator.clipboard.writeText(content).then(() => {
-        alert('已複製到剪貼板');
-    }).catch(() => {
-        alert('複製失敗，請手動選取複製');
-    });
-}
-
-// 頁面載入完成後的初始化
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('紫微斗數命盤轉換器已載入');
-    
-    // 可以在這裡添加一些初始化代碼，例如：
-    // - 檢查瀏覽器兼容性
-    // - 載入保存的數據
-    // - 設置默認值等
-});
-
-// 全局錯誤處理
-window.addEventListener('error', function(event) {
-    console.error('全局錯誤:', event.error);
-});('請先輸入命盤文字');
+        alert('請先輸入命盤文字');
         return;
     }
 
@@ -85,4 +47,37 @@ window.addEventListener('error', function(event) {
         
     } catch (error) {
         console.error('解析錯誤:', error);
-        alert
+        alert('解析失敗：' + error.message);
+    }
+}
+
+function copyResult(type) {
+    let content = '';
+    switch(type) {
+        case 'table':
+            content = document.getElementById('tableResult').innerHTML;
+            break;
+        case 'prompt':
+            content = document.getElementById('promptResult').innerText;
+            break;
+        case 'raw':
+            content = document.getElementById('rawResult').innerText;
+            break;
+    }
+    
+    navigator.clipboard.writeText(content).then(() => {
+        alert('已複製到剪貼板');
+    }).catch(() => {
+        alert('複製失敗，請手動選取複製');
+    });
+}
+
+// 頁面載入完成後的初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('紫微斗數命盤轉換器已載入');
+});
+
+// 全局錯誤處理
+window.addEventListener('error', function(event) {
+    console.error('全局錯誤:', event.error);
+});
