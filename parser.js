@@ -93,7 +93,7 @@ function parsePalaces(text, data) {
     }
 }
 
-function processPalace(palaceName, earthBranch, content, palace) {
+function processPalace(palaceName, earthBranch, content, data) {
     const palaceData = {
         earthBranch: earthBranch,
         mainStars: [],
@@ -112,7 +112,7 @@ function processPalace(palaceName, earthBranch, content, palace) {
     parseMinorStars(content, palaceData);
     parseLimitsAndYears(content, palaceData);
 
-    palace.palaces[palaceName] = palaceData;
+    data.palaces[palaceName] = palaceData;
 }
 
 function parseMainStars(content, palace) {
