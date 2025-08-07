@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紫微斗數命盤轉換器</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="converter-container">
+        <h2>紫微斗數命盤轉換器</h2>
+        <p>將原始命盤文字轉換為結構化表格和AI分析提示詞</p>
+        
+        <div class="input-section">
+            <h3>輸入原始命盤文字：</h3>
+            <textarea id="inputText" placeholder="請貼上文墨天機命盤文字..."></textarea>
+            <br>
+            <button class="convert-btn" onclick="convertChart()">轉換命盤</button>
+        </div>
+
+        <div class="output-section" id="outputSection">
+            <div class="tab-buttons">
+                <div class="tab-btn active" onclick="showTab('table')">結構化表格</div>
+                <div class="tab-btn" onclick="showTab('prompt')">AI分析提示詞</div>
+                <div class="tab-btn" onclick="showTab('raw')">解析數據</div>
+            </div>
+
+            <div id="tableTab" class="tab-content active">
+                <div class="result-area" id="tableResult"></div>
+                <button class="copy-btn" onclick="copyResult('table')">複製表格HTML</button>
+            </div>
+
+            <div id="promptTab" class="tab-content">
+                <div class="result-area" id="promptResult"></div>
+                <button class="copy-btn" onclick="copyResult('prompt')">複製提示詞</button>
+            </div>
+
+            <div id="rawTab" class="tab-content">
+                <div class="result-area" id="rawResult"></div>
+                <button class="copy-btn" onclick="copyResult('raw')">複製數據</button>
+            </div>
+        </div>
+
+        <div class="sample-data">
+            <h4>使用說明：</h4>
+            <ol>
+                <li>將文墨天機命盤文字完整貼到上方文字框</li>
+                <li>點擊「轉換命盤」按鈕進行解析</li>
+                <li>查看「結構化表格」獲得整理好的命盤資訊</li>
+                <li>查看「AI分析提示詞」獲得可用於AI分析的完整提示</li>
+                <li>複製相應內容用於後續分析</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="parser.js"></script>
+    <script src="formatter.js"></script>
+    <script src="prompt-generator.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

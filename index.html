@@ -5,53 +5,175 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>紫微斗數命盤轉換器</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* 密碼頁面樣式 - 這部分是新增的！ */
+        .password-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        
+        .password-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .password-box h2 {
+            color: #2c5aa0;
+            margin-bottom: 20px;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        
+        .password-submit {
+            background: #2c5aa0;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .password-submit:hover {
+            background: #1e3f73;
+        }
+        
+        .error-message {
+            color: #d32f2f;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        /* 這個是用來隱藏主內容的 */
+        .main-content {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="converter-container">
-        <h2>紫微斗數命盤轉換器</h2>
-        <p>將原始命盤文字轉換為結構化表格和AI分析提示詞</p>
-        
-        <div class="input-section">
-            <h3>輸入原始命盤文字：</h3>
-            <textarea id="inputText" placeholder="請貼上文墨天機命盤文字..."></textarea>
-            <br>
-            <button class="convert-btn" onclick="convertChart()">轉換命盤</button>
-        </div>
-
-        <div class="output-section" id="outputSection">
-            <div class="tab-buttons">
-                <div class="tab-btn active" onclick="showTab('table')">結構化表格</div>
-                <div class="tab-btn" onclick="showTab('prompt')">AI分析提示詞</div>
-                <div class="tab-btn" onclick="showTab('raw')">解析數據</div>
-            </div>
-
-            <div id="tableTab" class="tab-content active">
-                <div class="result-area" id="tableResult"></div>
-                <button class="copy-btn" onclick="copyResult('table')">複製表格HTML</button>
-            </div>
-
-            <div id="promptTab" class="tab-content">
-                <div class="result-area" id="promptResult"></div>
-                <button class="copy-btn" onclick="copyResult('prompt')">複製提示詞</button>
-            </div>
-
-            <div id="rawTab" class="tab-content">
-                <div class="result-area" id="rawResult"></div>
-                <button class="copy-btn" onclick="copyResult('raw')">複製數據</button>
-            </div>
-        </div>
-
-        <div class="sample-data">
-            <h4>使用說明：</h4>
-            <ol>
-                <li>將文墨天機命盤文字完整貼到上方文字框</li>
-                <li>點擊「轉換命盤」按鈕進行解析</li>
-                <li>查看「結構化表格」獲得整理好的命盤資訊</li>
-                <li>查看「AI分析提示詞」獲得可用於AI分析的完整提示</li>
-                <li>複製相應內容用於後續分析</li>
-            </ol>
+    <!-- 密碼輸入頁面 -->
+    <div class="password-container" id="passwordContainer">
+        <div class="password-box">
+            <h2>紫微斗數命盤轉換器</h2>
+            <p>請輸入密碼以進入系統</p>
+            <input type="password" 
+                   id="passwordInput" 
+                   class="password-input" 
+                   placeholder="請輸入密碼"
+                   onkeypress="handlePasswordKeyPress(event)">
+            <button class="password-submit" onclick="checkPassword()">確認</button>
+            <div class="error-message" id="errorMessage">密碼錯誤，請重新輸入</div>
         </div>
     </div>
+
+    <!-- 主要內容（需要密碼才能看到） -->
+    <div class="main-content" id="mainContent">
+        <div class="converter-container">
+            <h2>紫微斗數命盤轉換器</h2>
+            <p>將原始命盤文字轉換為結構化表格和AI分析提示詞</p>
+            
+            <div class="input-section">
+                <h3>輸入原始命盤文字：</h3>
+                <textarea id="inputText" placeholder="請貼上文墨天機命盤文字..."></textarea>
+                <br>
+                <button class="convert-btn" onclick="convertChart()">轉換命盤</button>
+            </div>
+
+            <div class="output-section" id="outputSection">
+                <div class="tab-buttons">
+                    <div class="tab-btn active" onclick="showTab('table')">結構化表格</div>
+                    <div class="tab-btn" onclick="showTab('prompt')">AI分析提示詞</div>
+                    <div class="tab-btn" onclick="showTab('raw')">解析數據</div>
+                </div>
+
+                <div id="tableTab" class="tab-content active">
+                    <div class="result-area" id="tableResult"></div>
+                    <button class="copy-btn" onclick="copyResult('table')">複製表格HTML</button>
+                </div>
+
+                <div id="promptTab" class="tab-content">
+                    <div class="result-area" id="promptResult"></div>
+                    <button class="copy-btn" onclick="copyResult('prompt')">複製提示詞</button>
+                </div>
+
+                <div id="rawTab" class="tab-content">
+                    <div class="result-area" id="rawResult"></div>
+                    <button class="copy-btn" onclick="copyResult('raw')">複製數據</button>
+                </div>
+            </div>
+
+            <div class="sample-data">
+                <h4>使用說明：</h4>
+                <ol>
+                    <li>將文墨天機命盤文字完整貼到上方文字框</li>
+                    <li>點擊「轉換命盤」按鈕進行解析</li>
+                    <li>查看「結構化表格」獲得整理好的命盤資訊</li>
+                    <li>查看「AI分析提示詞」獲得可用於AI分析的完整提示</li>
+                    <li>複製相應內容用於後續分析</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 密碼驗證功能
+        const CORRECT_PASSWORD = '5678';
+        
+        function checkPassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const errorMessage = document.getElementById('errorMessage');
+            const passwordContainer = document.getElementById('passwordContainer');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                // 密碼正確，顯示主內容
+                passwordContainer.style.display = 'none';
+                mainContent.style.display = 'block';
+                
+                // 儲存登入狀態到 sessionStorage（關閉瀏覽器後失效）
+                sessionStorage.setItem('authenticated', 'true');
+            } else {
+                // 密碼錯誤，顯示錯誤訊息
+                errorMessage.style.display = 'block';
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+        
+        function handlePasswordKeyPress(event) {
+            if (event.key === 'Enter') {
+                checkPassword();
+            }
+        }
+        
+        // 檢查是否已經登入
+        window.onload = function() {
+            const isAuthenticated = sessionStorage.getItem('authenticated');
+            if (isAuthenticated === 'true') {
+                document.getElementById('passwordContainer').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            } else {
+                document.getElementById('passwordInput').focus();
+            }
+        }
+    </script>
 
     <script src="config.js"></script>
     <script src="parser.js"></script>
