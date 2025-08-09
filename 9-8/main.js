@@ -1,16 +1,17 @@
 // 主程式 - 整合所有功能
 
-function showTab(tabName, btn) {
+function showTab(tabName) {
     // 隱藏所有tab
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
-    document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.remove('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
+    
     // 顯示選中的tab
     document.getElementById(tabName + 'Tab').classList.add('active');
-    if (btn) btn.classList.add('active');
+    event.target.classList.add('active');
 }
 
 function convertChart() {

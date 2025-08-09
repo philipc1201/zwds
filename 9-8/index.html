@@ -69,17 +69,22 @@
 </head>
 <body>
     <!-- 密碼輸入頁面 -->
-    
     <div class="password-container" id="passwordContainer">
         <div class="password-box">
-            <h2>注意：這不是安全登入</h2>
-            <p>此頁面為前端靜態頁，任何「密碼」只屬界面遮罩，不能提供實際保護。請勿輸入或存放任何敏感資料。</p>
-            <button onclick="enterApp()" class="enter-btn">我明白，進入頁面</button>
+            <h2>紫微斗數命盤轉換器</h2>
+            <p>請輸入密碼以進入系統</p>
+            <input type="password" 
+                   id="passwordInput" 
+                   class="password-input" 
+                   placeholder="請輸入密碼"
+                   onkeypress="handlePasswordKeyPress(event)">
+            <button class="password-submit" onclick="checkPassword()">確認</button>
+            <div class="error-message" id="errorMessage">密碼錯誤，請重新輸入</div>
         </div>
     </div>
 
-    <div class="main-content" id="mainContent" style="display:none;">
-    
+    <!-- 主要內容（需要密碼才能看到） -->
+    <div class="main-content" id="mainContent">
         <div class="converter-container">
             <h2>紫微斗數命盤轉換器</h2>
             <p>將原始命盤文字轉換為結構化表格和AI分析提示詞</p>
@@ -89,14 +94,13 @@
                 <textarea id="inputText" placeholder="請貼上文墨天機命盤文字..."></textarea>
                 <br>
                 <button class="convert-btn" onclick="convertChart()">轉換命盤</button>
-                <button class="convert-btn" onclick="pasteSample()">貼上示例</button>
             </div>
 
             <div class="output-section" id="outputSection">
                 <div class="tab-buttons">
-                    <div class="tab-btn active" onclick="showTab('table', this)">結構化表格</div>
-                    <div class="tab-btn" onclick="showTab('prompt', this)">AI分析提示詞</div>
-                    <div class="tab-btn" onclick="showTab('raw', this)">解析數據</div>
+                    <div class="tab-btn active" onclick="showTab('table')">結構化表格</div>
+                    <div class="tab-btn" onclick="showTab('prompt')">AI分析提示詞</div>
+                    <div class="tab-btn" onclick="showTab('raw')">解析數據</div>
                 </div>
 
                 <div id="tableTab" class="tab-content active">
@@ -130,9 +134,44 @@
 
     <script>
         // 密碼驗證功能
-        function enterApp() {
-            document.getElementById('passwordContainer').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
+        const CORRECT_PASSWORD = '5678';
+        
+        function checkPassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const errorMessage = document.getElementById('errorMessage');
+            const passwordContainer = document.getElementById('passwordContainer');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                // 密碼正確，顯示主內容
+                passwordContainer.style.display = 'none';
+                mainContent.style.display = 'block';
+                
+                // 儲存登入狀態到 sessionStorage（關閉瀏覽器後失效）
+                sessionStorage.setItem('authenticated', 'true');
+            } else {
+                // 密碼錯誤，顯示錯誤訊息
+                errorMessage.style.display = 'block';
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+        
+        function handlePasswordKeyPress(event) {
+            if (event.key === 'Enter') {
+                checkPassword();
+            }
+        }
+        
+        // 檢查是否已經登入
+        window.onload = function() {
+            const isAuthenticated = sessionStorage.getItem('authenticated');
+            if (isAuthenticated === 'true') {
+                document.getElementById('passwordContainer').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            } else {
+                document.getElementById('passwordInput').focus();
+            }
         }
     </script>
 
@@ -141,12 +180,5 @@
     <script src="formatter.js"></script>
     <script src="prompt-generator.js"></script>
     <script src="main.js"></script>
-<script>
-function pasteSample() {
-    const el = document.getElementById('inputText');
-    el.value = "\u3010\u7d2b\u5fae\u9b25\u6578\u547d\u76e4\u3011\n\u547d\u5bae\uff1a\u5bc5 \u5bae\u4e3b\u661f\uff1a\u7d2b\u5fae \u5929\u5e9c\n\u8eab\u5bae\uff1a\u5348\n\u7236\u6bcd\uff1a\u4e11 \u5144\u5f1f\uff1a\u5b50 \u592b\u59bb\uff1a\u4ea5 \u5b50\u5973\uff1a\u620c \u8ca1\u5e1b\uff1a\u9149 \u75be\u5384\uff1a\u7533 \u9077\u79fb\uff1a\u672a \u4ea4\u53cb\uff1a\u5348 \u4e8b\u696d\uff1a\u5df3 \u7530\u5b85\uff1a\u8fb0 \u798f\u5fb7\uff1a\u536f \u7530\u5b85\uff1a\u8fb0\n\u8fb2\u66c6\u6642\u9593\uff1a\u7532\u5b50\u5e74 \u6b63\u6708 \u521d\u4e00 \u4ea5\u6642\n[\u4e3b\u661f] \u7d2b\u5fae\u3001\u5929\u5e9c\n[\u8f14\u661f] \u5de6\u8f14\u3001\u53f3\u5f3c\u3001\u5929\u9b41\u3001\u5929\u925e\n[\u56db\u5316] \u7d2b\u5fae\u5316\u797f \u5de6\u8f14\u5316\u6b0a \u53f3\u5f3c\u5316\u79d1 \u5929\u5e9c\u5316\u5fcc\n[\u5927\u9650] 0-9 \u547d\u5bae \u5bc5\uff1b10-19 \u5144\u5f1f \u5bae \u5b50\uff1b20-29 \u592b\u59bb\u5bae \u4ea5\uff1b30-39 \u5b50\u5973\u5bae \u620c\uff1b40-49 \u8ca1\u5e1b\u5bae \u9149\uff1b50-59 \u75be\u5384\u5bae \u7533\uff1b60-69 \u9077\u79fb\u5bae \u672a\uff1b70-79 \u4ea4\u53cb\u5bae \u5348\uff1b80-89 \u4e8b\u696d\u5bae \u5df3\uff1b90-99 \u7530\u5b85\u5bae \u8fb0\n";
-    el.focus();
-}
-</script>
 </body>
 </html>
