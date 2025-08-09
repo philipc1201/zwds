@@ -1,5 +1,5 @@
 // 四化表配置
-const transformTable = {
+export const transformTable = {
     '甲': { 祿: '廉貞', 權: '破軍', 科: '武曲', 忌: '太陽' },
     '乙': { 祿: '天機', 權: '天梁', 科: '紫微', 忌: '太陰' },
     '丙': { 祿: '天同', 權: '天機', 科: '文昌', 忌: '廉貞' },
@@ -13,13 +13,13 @@ const transformTable = {
 };
 
 // 十二宮順序
-const palaceOrder = ['命宮', '父母宮', '福德宮', '田宅宮', '官祿宮', '交友宮', '遷移宮', '疾厄宮', '財帛宮', '子女宮', '夫妻宮', '兄弟宮'];
+export const palaceOrder = ['命宮', '父母宮', '福德宮', '田宅宮', '官祿宮', '交友宮', '遷移宮', '疾厄宮', '財帛宮', '子女宮', '夫妻宮', '兄弟宮'];
 
 // 地支順序
-const earthBranchOrder = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+export const earthBranchOrder = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
 
 // 對宮關係
-const oppositePalaces = {
+export const oppositePalaces = {
     '命宮': '遷移宮',
     '父母宮': '疾厄宮', 
     '福德宮': '財帛宮',
@@ -35,7 +35,7 @@ const oppositePalaces = {
 };
 
 // 三合宮組合
-const triPalaceGroups = {
+export const triPalaceGroups = {
     '申子辰': ['申', '子', '辰'],
     '寅午戌': ['寅', '午', '戌'],
     '巳酉丑': ['巳', '酉', '丑'],
@@ -43,7 +43,7 @@ const triPalaceGroups = {
 };
 
 // 六合組合
-const sixHarmonyPairs = {
+export const sixHarmonyPairs = {
     '子': '丑', '丑': '子',
     '寅': '亥', '亥': '寅',
     '卯': '戌', '戌': '卯',

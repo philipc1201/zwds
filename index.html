@@ -1,152 +1,35 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>紫微斗數命盤轉換器</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        /* 密碼頁面樣式 - 這部分是新增的！ */
-        .password-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f5f5f5;
-        }
-        
-        .password-box {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-        
-        .password-box h2 {
-            color: #2c5aa0;
-            margin-bottom: 20px;
-        }
-        
-        .password-input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            box-sizing: border-box;
-        }
-        
-        .password-submit {
-            background: #2c5aa0;
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-        }
-        
-        .password-submit:hover {
-            background: #1e3f73;
-        }
-        
-        .error-message {
-            color: #d32f2f;
-            margin-top: 10px;
-            display: none;
-        }
-        
-        /* 這個是用來隱藏主內容的 */
-        .main-content {
-            display: none;
-        }
-    </style>
-</head>
+<html lang="zh-HK">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Secure Ziwei</title></head>
 <body>
-    <!-- 密碼輸入頁面 -->
-    
-    <div class="password-container" id="passwordContainer">
-        <div class="password-box">
-            <h2>注意：這不是安全登入</h2>
-            <p>此頁面為前端靜態頁，任何「密碼」只屬界面遮罩，不能提供實際保護。請勿輸入或存放任何敏感資料。</p>
-            <button onclick="enterApp()" class="enter-btn">我明白，進入頁面</button>
-        </div>
-    </div>
+  <h2>登入</h2>
+  <input id="pwd" type="password" placeholder="Password"/>
+  <button id="loginBtn">登入</button>
+  <pre id="msg"></pre>
 
-    <div class="main-content" id="mainContent" style="display:none;">
-    
-        <div class="converter-container">
-            <h2>紫微斗數命盤轉換器</h2>
-            <p>將原始命盤文字轉換為結構化表格和AI分析提示詞</p>
-            
-            <div class="input-section">
-                <h3>輸入原始命盤文字：</h3>
-                <textarea id="inputText" placeholder="請貼上文墨天機命盤文字..."></textarea>
-                <br>
-                <button class="convert-btn" onclick="convertChart()">轉換命盤</button>
-                <button class="convert-btn" onclick="pasteSample()">貼上示例</button>
-            </div>
+  <h2>轉換</h2>
+  <textarea id="input" rows="8" cols="80" placeholder="貼上命盤文本..."></textarea><br/>
+  <button id="convertBtn">呼叫 /api/convert</button>
+  <h3>結果</h3>
+  <div id="table"></div>
+  <pre id="prompt"></pre>
 
-            <div class="output-section" id="outputSection">
-                <div class="tab-buttons">
-                    <div class="tab-btn active" onclick="showTab('table', this)">結構化表格</div>
-                    <div class="tab-btn" onclick="showTab('prompt', this)">AI分析提示詞</div>
-                    <div class="tab-btn" onclick="showTab('raw', this)">解析數據</div>
-                </div>
-
-                <div id="tableTab" class="tab-content active">
-                    <div class="result-area" id="tableResult"></div>
-                    <button class="copy-btn" onclick="copyResult('table')">複製表格HTML</button>
-                </div>
-
-                <div id="promptTab" class="tab-content">
-                    <div class="result-area" id="promptResult"></div>
-                    <button class="copy-btn" onclick="copyResult('prompt')">複製提示詞</button>
-                </div>
-
-                <div id="rawTab" class="tab-content">
-                    <div class="result-area" id="rawResult"></div>
-                    <button class="copy-btn" onclick="copyResult('raw')">複製數據</button>
-                </div>
-            </div>
-
-            <div class="sample-data">
-                <h4>使用說明：</h4>
-                <ol>
-                    <li>將文墨天機命盤文字完整貼到上方文字框</li>
-                    <li>點擊「轉換命盤」按鈕進行解析</li>
-                    <li>查看「結構化表格」獲得整理好的命盤資訊</li>
-                    <li>查看「AI分析提示詞」獲得可用於AI分析的完整提示</li>
-                    <li>複製相應內容用於後續分析</li>
-                </ol>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // 密碼驗證功能
-        function enterApp() {
-            document.getElementById('passwordContainer').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-        }
-    </script>
-
-    <script src="config.js"></script>
-    <script src="parser.js"></script>
-    <script src="formatter.js"></script>
-    <script src="prompt-generator.js"></script>
-    <script src="main.js"></script>
 <script>
-function pasteSample() {
-    const el = document.getElementById('inputText');
-    el.value = "\u3010\u7d2b\u5fae\u9b25\u6578\u547d\u76e4\u3011\n\u547d\u5bae\uff1a\u5bc5 \u5bae\u4e3b\u661f\uff1a\u7d2b\u5fae \u5929\u5e9c\n\u8eab\u5bae\uff1a\u5348\n\u7236\u6bcd\uff1a\u4e11 \u5144\u5f1f\uff1a\u5b50 \u592b\u59bb\uff1a\u4ea5 \u5b50\u5973\uff1a\u620c \u8ca1\u5e1b\uff1a\u9149 \u75be\u5384\uff1a\u7533 \u9077\u79fb\uff1a\u672a \u4ea4\u53cb\uff1a\u5348 \u4e8b\u696d\uff1a\u5df3 \u7530\u5b85\uff1a\u8fb0 \u798f\u5fb7\uff1a\u536f \u7530\u5b85\uff1a\u8fb0\n\u8fb2\u66c6\u6642\u9593\uff1a\u7532\u5b50\u5e74 \u6b63\u6708 \u521d\u4e00 \u4ea5\u6642\n[\u4e3b\u661f] \u7d2b\u5fae\u3001\u5929\u5e9c\n[\u8f14\u661f] \u5de6\u8f14\u3001\u53f3\u5f3c\u3001\u5929\u9b41\u3001\u5929\u925e\n[\u56db\u5316] \u7d2b\u5fae\u5316\u797f \u5de6\u8f14\u5316\u6b0a \u53f3\u5f3c\u5316\u79d1 \u5929\u5e9c\u5316\u5fcc\n[\u5927\u9650] 0-9 \u547d\u5bae \u5bc5\uff1b10-19 \u5144\u5f1f \u5bae \u5b50\uff1b20-29 \u592b\u59bb\u5bae \u4ea5\uff1b30-39 \u5b50\u5973\u5bae \u620c\uff1b40-49 \u8ca1\u5e1b\u5bae \u9149\uff1b50-59 \u75be\u5384\u5bae \u7533\uff1b60-69 \u9077\u79fb\u5bae \u672a\uff1b70-79 \u4ea4\u53cb\u5bae \u5348\uff1b80-89 \u4e8b\u696d\u5bae \u5df3\uff1b90-99 \u7530\u5b85\u5bae \u8fb0\n";
-    el.focus();
-}
+let TOKEN = null;
+loginBtn.onclick = async () => {
+  const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pwd.value }) });
+  const j = await r.json();
+  if (!r.ok) { msg.textContent = '登入失敗：' + (j.error||r.status); return; }
+  TOKEN = j.token;
+  msg.textContent = '登入成功';
+};
+
+convertBtn.onclick = async () => {
+  const r = await fetch('/api/convert', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({ rawText: input.value }) });
+  const j = await r.json();
+  if (!r.ok) { alert('錯誤：' + JSON.stringify(j)); return; }
+  table.innerHTML = j.tableHtml;
+  prompt.textContent = j.prompt;
+};
 </script>
-</body>
-</html>
+</body></html>

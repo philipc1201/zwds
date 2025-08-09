@@ -1,5 +1,21 @@
+import { transformTable, palaceOrder, triPalaceGroups, sixHarmonyPairs } from './config.js';
 // 解析命盤的主要功能
+// 正規化輸入：轉半形、統一空白與換行
+function normalizeInput(text) {
+    if (!text) return '';
+    // 全形轉半形
+    const toHalf = s => s.replace(/[！-～]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+                         .replace(/　/g, ' ');
+    let out = toHalf(text);
+    // 統一行尾與多重空白
+    out = out.replace(/\r\n?/g, '\n').replace(/[\t\u00A0]+/g, ' ');
+    // 去掉行首尾多餘空白
+    out = out.split('\n').map(l => l.trimEnd()).join('\n');
+    return out;
+}
+
 function parseChart(text) {
+    text = normalizeInput(text);
     const data = {
         basicInfo: {},
         palaces: {},
@@ -438,3 +454,5 @@ function getBirthYearStem(lunarTime) {
     const yearMatch = lunarTime.match(/([甲乙丙丁戊己庚辛壬癸])[子丑寅卯辰巳午未申酉戌亥]年/);
     return yearMatch ? yearMatch[1] : null;
 }
+
+export { parseChart };

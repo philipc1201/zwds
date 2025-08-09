@@ -1,3 +1,4 @@
+import { transformTable, palaceOrder, triPalaceGroups, sixHarmonyPairs } from './config.js';
 // 生成HTML表格
 function generateTable(data) {
     let html = `
@@ -209,3 +210,5 @@ function formatStarForPrompt(star) {
     }
     return result;
 }
+
+export { generateTable, formatStarForPrompt };

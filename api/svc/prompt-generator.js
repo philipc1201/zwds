@@ -1,4 +1,160 @@
+import { transformTable, palaceOrder, triPalaceGroups, sixHarmonyPairs } from './config.js';
+import { formatStarForPrompt } from './formatter.js';
 // 生成AI分析提示詞
+
+// === 身宮視角輔助 ===
+
+// 找到身宮對應的原始宮位名稱（如 '官祿宮'）
+function resolveBodyPalaceName(data) {
+    const raw = (data.basicInfo && data.basicInfo.bodyPalace) ? String(data.basicInfo.bodyPalace).replace('宮','') : null;
+    if (!raw) return null;
+    const candidate = raw.endsWith('宮') ? raw : raw + '宮';
+    if (data.palaces && data.palaces[candidate]) return candidate;
+    // fallback：嘗試以包含字樣匹配
+    const keys = Object.keys(data.palaces || {});
+    const hit = keys.find(k => k.includes(raw));
+    return hit || null;
+}
+
+// 以身宮為立極，旋轉十二宮（palaceOrder 由 config.js 提供）
+// 回傳陣列：[{label:'身命', original:'官祿宮', palace: {...}}, ...]
+function buildBodyCenteredPalaces(data) {
+    const bodyOriginal = resolveBodyPalaceName(data);
+    if (!bodyOriginal || !Array.isArray(palaceOrder)) return null;
+    const idx = palaceOrder.indexOf(bodyOriginal);
+    if (idx === -1) return null;
+    const rotated = [];
+    for (let i = 0; i < palaceOrder.length; i++) {
+        const labelName = palaceOrder[i].replace('宮',''); // 命、父母、福德...
+        const originalIndex = (idx + i) % palaceOrder.length;
+        const originalName = palaceOrder[originalIndex];
+        rotated.push({
+            label: `身${labelName}`,
+            original: originalName,
+            palace: data.palaces[originalName]
+        });
+    }
+    return rotated;
+}
+
+// 生成「身宮總覽」區塊
+function renderBodyPalaceSummary(data) {
+    const bodyOriginal = resolveBodyPalaceName(data);
+    if (!bodyOriginal) return '\\n【身宮總覽】\\n身宮：未知（資料不足）\\n';
+    const p = data.palaces[bodyOriginal] || {};
+    const main = (p.mainStars || []).map(s => formatStarForPrompt(s)).join('、') || '（無主星記錄）';
+    const sup  = (p.supportStars || []).map(s => formatStarForPrompt(s)).join('、') || '（無輔星記錄）';
+    const minor= (p.minorStars || []).map(s => formatStarForPrompt(s)).join('、') || '（無小星記錄）';
+    // 摘要：納入自化/飛化
+    const transforms = [];
+    for (const group of [p.mainStars||[], p.supportStars||[], p.minorStars||[]]) {
+        for (const st of group) {
+            if (st.selfTransform) transforms.push(`${st.name}自化${st.selfTransform}`);
+            if (st.flyOutTransform) transforms.push(`${st.name}化${st.flyOutTransform}飛出→${st.flyTo||'未知宮'}`);
+            if (st.flyInTransform) transforms.push(`←${st.flyInFrom||'未知宮'}來${st.name}被化${st.flyInTransform}`);
+        }
+    }
+    const transLine = transforms.length ? ('四化重點：' + Array.from(new Set(transforms)).join('、')) : '四化重點：—';
+
+    return `
+【身宮總覽】
+- 身宮所在：${bodyOriginal}（地支：${p.earthBranch || '未知'}）
+- 身宮主星：${main}
+- 身宮輔星：${sup}
+- 身宮小星：${minor}
+- ${transLine}
+- 解讀要求：以**身宮為主體**，優先分析職志、行動傾向、身心狀態與外在角色；並與命宮、本命三方四正作交叉驗證。`;
+}
+
+// 生成「以身宮立極的十二宮」區塊
+function renderBodyCenteredSystem(data) {
+    const rotated = buildBodyCenteredPalaces(data);
+    if (!rotated) return '\\n【身宮十二宮】\\n（缺少身宮或十二宮次序，略）\\n';
+    let out = '\\n【以身宮立極的十二宮】\\n（以下每一宮括號內為「原命盤對應的宮位」）\\n';
+    for (const item of rotated) {
+        const p = item.palace || {};
+        const main = (p.mainStars || []).map(s => formatStarForPrompt(s)).join('、') || '—';
+        const sup  = (p.supportStars || []).map(s => formatStarForPrompt(s)).join('、') || '—';
+        const minor= (p.minorStars || []).map(s => formatStarForPrompt(s)).join('、') || '—';
+
+        out += `\n- ${item.label}（原：${item.original}；地支：${p.earthBranch || '未知'}）
+  主星：${main}
+  輔星：${sup}
+  小星：${minor}`;
+    }
+    out += `
+
+【身宮視角的解讀指引】
+- 以「身命 → 身對宮 → 身三合 → 身鄰宮 → 身六合」為優先層級分析事件落點與力量來源。
+- 對比本命命宮系統：若兩套系統在某一議題（例如職業、婚姻、健康）同向，結論加權；若背離，須指出情境差異（如「角色」與「內在意識」不一致）。
+- 大限/流年評估時，同步標註該運在**身宮系統**中的落點（例如「流年太陽落於身遷移」），並解釋其對行動與身心的具體影響。`;
+    return out;
+}
+
+
+
+// === 身宮 vs 命宮 一致/背馳 診斷（新增） ===
+function renderBodyVsLifeDiagnostics(data) {
+    const life = data.palaces['命宮'];
+    const bodyName = resolveBodyPalaceName(data);
+    const body = bodyName ? data.palaces[bodyName] : null;
+    if (!life || !body) {
+        return `
+【身宮 vs 命宮｜一致/背馳】
+- 資料不足（缺少命宮或身宮）。`;
+    }
+    const getSet = p => new Set([...(p.mainStars||[]), ...(p.supportStars||[])].map(s => s.name || s));
+    const lifeSet = getSet(life);
+    const bodySet = getSet(body);
+    const overlap = [...lifeSet].filter(x => bodySet.has(x));
+    const lifeOnly = [...lifeSet].filter(x => !bodySet.has(x));
+    const bodyOnly = [...bodySet].filter(x => !lifeSet.has(x));
+
+    let out = `
+【身宮 vs 命宮｜一致/背馳】
+- 命宮：${life.earthBranch||'—'}；主星：${(life.mainStars||[]).map(s=>s.name||s).join('、')||'—'}
+- 身宮（原：${bodyName}）：${body.earthBranch||'—'}；主星：${(body.mainStars||[]).map(s=>s.name||s).join('、')||'—'}
+- 星曜重疊（一致傾向）：${overlap.length ? overlap.join('、') : '—'}
+- 命宮獨有（內在意識偏向）：${lifeOnly.length ? lifeOnly.join('、') : '—'}
+- 身宮獨有（外在角色/行為偏向）：${bodyOnly.length ? bodyOnly.join('、') : '—'}
+
+【議題級對照】（一致→加權；背馳→說明情境差異）`;
+
+    const rotated = buildBodyCenteredPalaces(data) || [];
+    const pairMap = {
+        '身官祿':'官祿宮', '身夫妻':'夫妻宮', '身疾厄':'疾厄宮', '身財帛':'財帛宮',
+        '身遷移':'遷移宮', '身田宅':'田宅宮', '身子女':'子女宮', '身交友':'交友宮',
+        '身父母':'父母宮', '身兄弟':'兄弟宮', '身福德':'福德宮', '身命':'命宮'
+    };
+    for (const item of rotated) {
+        const label = item.label.replace('宮','');
+        const orig = pairMap[label];
+        if (!orig || !data.palaces[orig]) continue;
+        const setA = getSet(item.palace || {});
+        const setB = getSet(data.palaces[orig]);
+        const ov = [...setA].filter(x => setB.has(x));
+        const onlyA = [...setA].filter(x => !setB.has(x));
+        const onlyB = [...setB].filter(x => !setA.has(x));
+        out += `
+- ${label} ⟺ ${orig}：重疊【${ov.length?ov.join('、'):'—'}】；身側僅見【${onlyA.length?onlyA.join('、'):'—'}】；本命僅見【${onlyB.length?onlyB.join('、'):'—'}】`;
+    }
+    out += `
+
+【四化一致性掃描】
+- 請特別標註同時出現在命宮與身宮、或其本對宮/三合中的化祿/化權/化科/化忌，視為重點敘事節點。`;
+    return out;
+}
+
+// === 大限/流年：標註身宮系統落點（新增） ===
+function renderFortuneBodyLandingGuide(data) {
+    return `
+【大限/流年：標註身宮系統落點】
+- 在每個大限與流年分析段落中，請同時標示：
+  1) **本命系統落點**：該運落在本命的哪一宮（例如「大限星群落於遷移」）
+  2) **身宮系統落點**：把該運對應到「以身宮立極」的哪一宮（例如「同時落於身交友」）
+- 說明兩套系統對事件的**同向或背馳**，並以重疊/互補的星曜與四化為主要依據。`;
+}
+
 function generatePrompt(data) {
     const birthYearStem = getBirthYearStem(data.basicInfo.lunarTime);
     
@@ -96,6 +252,14 @@ function generatePrompt(data) {
         }
     });
 
+    
+    // 身宮視角（新增）
+    prompt += renderBodyPalaceSummary(data);
+    prompt += renderBodyCenteredSystem(data);
+// 身宮 vs 命宮 診斷（新增）
+    prompt += renderBodyVsLifeDiagnostics(data);
+    // 大限/流年：身宮落點標註（新增）
+    prompt += renderFortuneBodyLandingGuide(data);
     prompt += generateAnalysisFramework();
     
     return prompt;
@@ -811,3 +975,5 @@ function generateDetailedAnalysisTemplates() {
 - **四化重疊檢視**：特別注意本對合鄰六合範圍內是否有四化重疊現象，如疊祿、生年化祿+大限化科等組合，這些都是運勢的關鍵轉折點
 - **本對合鄰六合的動態變化**：每個大限都要完整分析該宮位的本對合鄰六合系統，不能只看本宮`;
 }
+
+export { generatePrompt };
