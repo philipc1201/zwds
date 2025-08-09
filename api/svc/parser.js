@@ -1,4 +1,4 @@
-import { transformTable, palaceOrder, triPalaceGroups, sixHarmonyPairs } from './config.js';
+import { transformTable, palaceOrder, earthBranchOrder, triPalaceGroups, sixHarmonyPairs } from './config.js';
 // 解析命盤的主要功能
 // 正規化輸入：轉半形、統一空白與換行
 function normalizeInput(text) {
